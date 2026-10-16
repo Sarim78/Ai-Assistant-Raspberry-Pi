@@ -1,0 +1,6 @@
+pvporcupine
+pvrecorder
+vosk
+anthropic
+requests
+python-dotenv

@@ -1,0 +1,5 @@
+.env
+venv/
+__pycache__/
+vosk-model-small-en-us-0.15/
+*.zip
