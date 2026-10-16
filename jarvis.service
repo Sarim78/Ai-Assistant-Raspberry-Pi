@@ -1,0 +1,16 @@
+[Unit]
+Description=Jarvis voice assistant
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/jarvis
+ExecStart=/home/pi/jarvis/venv/bin/python /home/pi/jarvis/jarvis.py
+EnvironmentFile=/home/pi/jarvis/.env
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

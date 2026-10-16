@@ -1,6 +1,6 @@
-pvporcupine
-pvrecorder
-vosk
-anthropic
-requests
-python-dotenv
+pvporcupine>=3.0,<4
+pvrecorder>=1.2,<2
+vosk>=0.3.45,<1
+anthropic>=0.40,<1
+requests>=2.31,<3
+python-dotenv>=1.0,<2

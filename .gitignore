@@ -1,5 +1,19 @@
+# Secrets (keep the example file, ignore the real one)
 .env
-venv/
+.env.*
+!.env.example
+
+# Python
 __pycache__/
+*.pyc
+venv/
+.venv/
+
+# Speech model and downloads
 vosk-model-small-en-us-0.15/
 *.zip
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
