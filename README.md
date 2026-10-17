@@ -234,7 +234,7 @@ Issues and pull requests are welcome. Please keep API keys and personal data out
 
 ## License
 
-This project does not yet include a license. Add one before publishing, for example the MIT License.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
 
