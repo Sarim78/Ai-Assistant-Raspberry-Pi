@@ -1,158 +1,244 @@
-# Jarvis AI Assistant
+# Jarvis: Raspberry Pi Voice Assistant
 
-A voice assistant for Raspberry Pi. Say "Jarvis" and ask any question. It listens, searches the web when needed, and answers out loud in an ElevenLabs voice.
+Say "Jarvis" and ask a question. Jarvis listens for the wake word, transcribes your question offline, searches the web when it needs current information, and answers out loud in an ElevenLabs voice.
 
-Built on a Raspberry Pi 400 with Python.
+Built with Python and tested on a Raspberry Pi 400.
+
+## Features
+
+- Offline wake word detection with Picovoice Porcupine
+- Offline speech-to-text with Vosk
+- Answers and web search with Claude (Anthropic API)
+- Natural spoken replies with ElevenLabs text-to-speech
+- Optional systemd service to start automatically on boot
 
 ## How it works
 
-1. **Wake word:** Picovoice Porcupine listens continuously for the word "Jarvis" and runs entirely on the Pi.
-2. **Speech to text:** After the wake word, Vosk converts the spoken question into text on the Pi, offline.
-3. **Answer:** The question goes to Claude (Anthropic API). Claude can use web search for current information like news, scores, and prices.
-4. **Voice reply:** The answer is sent to the ElevenLabs text-to-speech API and played through the speaker.
+1. **Wake word:** Porcupine listens continuously for "Jarvis" and runs entirely on the Pi.
+2. **Speech to text:** After the wake word, Vosk turns your question into text on the Pi.
+3. **Answer:** The question goes to Claude. Claude can search the web for current information such as news, scores, and prices.
+4. **Voice reply:** The answer is sent to the ElevenLabs API and played through the speaker.
 
 ## Hardware
 
-- Raspberry Pi 400 (or Pi 4 / Pi 5 with 4 GB RAM or more)
+- Raspberry Pi 400, or Raspberry Pi 4 or 5 with at least 4 GB of RAM
 - microSD card, 16 GB or larger
-- USB microphone
-- Speaker (USB speaker, or a speaker on the 3.5mm jack)
-- Monitor with a micro-HDMI cable for first setup
-- Power supply for the Pi
+- USB microphone (the Pi has no built-in microphone)
+- Speaker, either USB or connected to the 3.5 mm audio jack
+- Monitor and micro-HDMI cable for first-time setup
+- Official Raspberry Pi power supply
 
 ## Accounts and API keys
 
 You need three accounts:
 
-- **Picovoice Console** (console.picovoice.ai): provides the AccessKey for the wake word.
-- **Anthropic Console** (console.anthropic.com): provides the API key for Claude. Anthropic charges per use.
-- **ElevenLabs** (elevenlabs.io): provides the API key and a Voice ID for the spoken replies.
+| Service | Used for | Sign up |
+|---|---|---|
+| Picovoice Console | Wake word AccessKey | [console.picovoice.ai](https://console.picovoice.ai) |
+| Anthropic Console | Claude API key (billed per use) | [console.anthropic.com](https://console.anthropic.com) |
+| ElevenLabs | API key and Voice ID for speech | [elevenlabs.io](https://elevenlabs.io) |
+
+Keep all keys private. Never paste them into code, screenshots, or commit messages.
 
 ## Setup
 
 ### 1. Install Raspberry Pi OS
 
-Use Raspberry Pi Imager or Rufus to write the current 64-bit Raspberry Pi OS to the SD card. Boot the Pi and finish the setup screens. Then update the system:
+Use Raspberry Pi Imager to write the current **64-bit Raspberry Pi OS** to your SD card. Enable SSH and set your username and password in the Imager settings if you want remote access. Boot the Pi, complete the setup screens, and update the system:
 
-```
+```bash
 sudo apt update
 sudo apt full-upgrade -y
 ```
 
-### 2. Install VS Code (optional)
+### 2. Install system packages
 
-```
-sudo apt install code
-```
-
-### 3. Install system packages
-
-```
-sudo apt install mpg123
+```bash
+sudo apt install -y git mpg123 python3-venv python3-pip
 ```
 
-### 4. Create the project and virtual environment
+Optional, for editing files in a graphical editor:
 
+```bash
+sudo apt install -y code
 ```
-mkdir ~/jarvis
-cd ~/jarvis
+
+### 3. Clone the repository
+
+```bash
+cd ~
+git clone https://github.com/Sarim78/Ai-Assistant-Raspberry-Pi.git
+cd Ai-Assistant-Raspberry-Pi
+```
+
+### 4. Create a virtual environment and install Python packages
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install pvporcupine pvrecorder vosk anthropic requests python-dotenv
+pip install -r requirements.txt
 ```
 
-Always run `source venv/bin/activate` before running the project. You'll see `(venv)` in the prompt when it's active.
+Always run `source venv/bin/activate` before you run Jarvis. When the environment is active, `(venv)` appears at the start of your prompt.
 
 ### 5. Download the speech model
 
-```
+The Vosk model is about 40 MB and isn't stored in this repository.
+
+```bash
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
+rm vosk-model-small-en-us-0.15.zip
 ```
 
-### 6. Check your microphone
+### 6. Check your audio devices
 
-```
+```bash
 arecord -l
-```
-
-Your USB microphone should appear in the list. Test the speaker with:
-
-```
 speaker-test -t wav -c 2
 ```
 
-Press Ctrl+C to stop.
+`arecord -l` should list your USB microphone. Press Ctrl+C to stop the speaker test.
 
-### 7. Add your keys
+### 7. Add your API keys
 
-Create a file named `.env` in the `jarvis` folder:
+```bash
+cp .env.example .env
+nano .env
+```
+
+Fill in the values:
 
 ```
-PICOVOICE_ACCESS_KEY=your_picovoice_key
-ANTHROPIC_API_KEY=your_anthropic_key
-ELEVENLABS_API_KEY=your_elevenlabs_key
+PICOVOICE_ACCESS_KEY=your_picovoice_access_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
 ELEVENLABS_VOICE_ID=your_voice_id
 ```
 
-The `.env` file holds private keys. Never commit it to GitHub.
+Save with Ctrl+O and Enter, then exit with Ctrl+X. The `.env` file is ignored by Git, so your keys stay on the Pi.
 
 ## Running Jarvis
 
-```
-cd ~/jarvis
+```bash
+cd ~/Ai-Assistant-Raspberry-Pi
 source venv/bin/activate
 python jarvis.py
 ```
 
-Wait for "Jarvis is ready," then say "Jarvis" followed by your question. Press Ctrl+C to stop.
+Wait until you hear "Jarvis is ready." Then say "Jarvis" and ask your question. Press Ctrl+C to stop.
 
-## Project structure
+## Run on boot (optional)
 
+After Jarvis works from the terminal, you can run it as a background service. Edit `jarvis.service` first if your username isn't `pi`, and update `User=` and the paths to match.
+
+```bash
+sudo cp jarvis.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now jarvis
 ```
-jarvis/
-├── jarvis.py                          # Main program
-├── .env                               # Your API keys (private, not committed)
-├── .gitignore                         # Keeps .env and the model folder out of Git
-├── requirements.txt                   # Python packages
-└── vosk-model-small-en-us-0.15/       # Speech recognition model (downloaded)
+
+Check the status with `systemctl status jarvis`, or follow the live log with:
+
+```bash
+journalctl -u jarvis -f
 ```
 
 ## Configuration
 
-Settings are at the top of `jarvis.py`:
+Set these in `.env`. Defaults are used for any optional value you leave out.
 
-- `MODEL`: the Claude model used for answers.
-- `SYSTEM`: the instructions that shape how Jarvis talks. Edit this to change its personality.
-- `max_uses` in the web search tool: how many searches Claude can run per question. Lowering it keeps costs down.
-- `model_id` in the ElevenLabs request: set to a Flash model to cut voice costs roughly in half.
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `PICOVOICE_ACCESS_KEY` | Yes | none | Wake word engine |
+| `ANTHROPIC_API_KEY` | Yes | none | Claude API |
+| `ELEVENLABS_API_KEY` | Yes | none | Text to speech |
+| `ELEVENLABS_VOICE_ID` | Yes | none | Voice used for replies |
+| `JARVIS_MODEL` | No | `claude-haiku-5-5` | Claude model for answers |
+| `ELEVENLABS_MODEL_ID` | No | `eleven_flash_v2_5` | Voice model. Flash costs about half as much as Multilingual v2 |
+| `VOSK_MODEL_DIR` | No | `vosk-model-small-en-us-0.15` | Speech model folder |
+| `JARVIS_MIC_INDEX` | No | `-1` (default device) | Microphone index from `arecord -l` if the default is wrong |
+| `JARVIS_LOG_LEVEL` | No | `INFO` | Set to `DEBUG` for more detail |
+
+Other settings are at the top of `jarvis.py`:
+
+- `SYSTEM_PROMPT` controls how Jarvis speaks. Edit it to change its personality.
+- `MAX_WEB_SEARCHES` limits how many searches Claude can run per question. Lower it to control costs.
+- `HISTORY_LIMIT` sets how many messages are kept in conversation memory.
 
 ## Costs
 
-Costs depend on use. For light to moderate use, expect roughly $10 to $25 a month, mostly from the Claude API (including web search) and ElevenLabs. Check each provider's pricing page for current rates.
+Costs depend on how often you use Jarvis. For light to moderate use, expect roughly $10 to $25 per month, mostly from the Claude API (including web search) and ElevenLabs. Web search is billed per search, on top of token costs. Check each provider's pricing page for current rates.
+
+## Project structure
+
+```
+Ai-Assistant-Raspberry-Pi/
+├── jarvis.py               # Main program
+├── jarvis.service          # systemd service file (optional)
+├── requirements.txt        # Python dependencies
+├── .env.example            # Template for your API keys
+├── .gitignore              # Keeps secrets and large files out of Git
+├── README.md
+├── .env                    # Your keys (created on the Pi, never committed)
+└── vosk-model-small-en-us-0.15/   # Speech model (downloaded, never committed)
+```
 
 ## Troubleshooting
 
-- **Wake word doesn't respond:** Check that your microphone shows up with `arecord -l` and that your Picovoice AccessKey is valid.
-- **No sound from the speaker:** Run `speaker-test -t wav -c 2` to test the audio output, and make sure `mpg123` is installed.
-- **"Invalid AccessKey" error:** Log into the Picovoice Console and confirm your key is active.
-- **Speech is misheard:** Try a larger Vosk model. It's more accurate but uses more memory.
-- **Slow replies:** ElevenLabs and Claude both need internet. Check your Wi-Fi connection.
-- **Web search error:** Check docs.claude.com for the current name of the web search tool and update it in `jarvis.py`.
+**Missing setting error on startup**
+Check that `.env` exists and every required variable has a value.
+
+**"Speech model folder not found"**
+Make sure you ran the download step in the project folder and the `vosk-model-small-en-us-0.15` folder exists.
+
+**Wake word doesn't respond**
+Run `arecord -l` to confirm the microphone is detected. Then check that your Picovoice AccessKey is active in the Picovoice Console. Picovoice has changed its free tier, so your key may need a paid plan.
+
+**"Invalid AccessKey" or wake word engine error**
+Log in to the Picovoice Console and confirm the key is active and allowed for your device.
+
+**No sound from the speaker**
+Run `speaker-test -t wav -c 2` to test output. Make sure `mpg123` is installed.
+
+**Microphone not picked up**
+Try a different USB port, or set `JARVIS_MIC_INDEX` in `.env` to the number shown by `arecord -l`.
+
+**Speech is misheard**
+Recognition is best when the speaker is close to the microphone. A larger Vosk model is more accurate but needs more memory.
+
+**Slow replies**
+Claude and ElevenLabs both need an internet connection. Check your Wi-Fi.
+
+**Web search error**
+The web search tool version may have changed. Check [docs.claude.com](https://docs.claude.com) for the current tool name and update it in `jarvis.py`.
+
+**Jarvis hears itself and wakes up**
+Use headphones, or place the speaker away from the microphone.
 
 ## Known limitations
 
-- Jarvis has no memory between runs. Conversation history resets when the program restarts.
-- The Pi has no built-in microphone, so a USB mic is required.
-- Recognition works best when the speaker is close to the microphone.
+- Jarvis doesn't remember conversations after it restarts.
+- Wake word and speech recognition work best in quiet rooms.
+- The Pi needs internet access for Claude and ElevenLabs.
+
+## Security
+
+- Never commit `.env` or share your API keys.
+- If a key is ever exposed, revoke it in the provider's console and create a new one.
+- The `.gitignore` excludes `.env` and the speech model folder.
+
+## Contributing
+
+Issues and pull requests are welcome. Please keep API keys and personal data out of any commits.
 
 ## License
 
-Add your license here, for example MIT.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
 
 - [Picovoice Porcupine](https://picovoice.ai) for wake word detection
 - [Vosk](https://alphacephei.com/vosk/) for offline speech recognition
 - [Anthropic Claude](https://www.anthropic.com) for answers and web search
-- [ElevenLabs](https://elevenlabs.io) for text-to-speech
+- [ElevenLabs](https://elevenlabs.io) for text to speech
